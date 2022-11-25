@@ -30,9 +30,10 @@ func TestGetTime(t *testing.T) {
 func TestSetTime(t *testing.T) {
 	trans := Transaction{}
 	trans.SetTime(ISTDATETIMEFORMAT, "30/12/2021 23:22:21 +0530")
-	want, _ := time.Parse(ISTDATETIMEFORMAT, "30/12/2021 23:22:21 +0530")
-	if trans.Date != want {
-		t.Fatalf("got %v, wanted %v", trans.Date, want)
+	got := trans.GetTime()
+	want := "30/12/2021 23:22:21 +0530"
+	if got != want {
+		t.Fatalf("got %v, wanted %v", got, want)
 	}
 }
 
