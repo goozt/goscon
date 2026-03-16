@@ -1,17 +1,17 @@
-package goscon
+package cli
 
 import (
 	"errors"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
 
+	"github.com/goozt/goscon"
 	"github.com/urfave/cli/v2"
 )
 
-type CliOptions struct {
+type Options struct {
 	IsBatch bool
 	Batch   []string
 	File    string
@@ -19,7 +19,7 @@ type CliOptions struct {
 	Format  string
 }
 
-func (c *CliOptions) SetFormat(format string) error {
+func (c *Options) SetFormat(format string) error {
 	formatsAvailable := []string{"csv", "json"}
 	for _, f := range formatsAvailable {
 		if format == f {
@@ -30,11 +30,11 @@ func (c *CliOptions) SetFormat(format string) error {
 	return errors.New("error: invalid format flag")
 }
 
-func loadFilenames(dir string, ch chan string) {
+func loadFilenames(dir string, ch chan string) error {
 	defer close(ch)
 	files, err := os.ReadDir(dir)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	for _, file := range files {
@@ -42,37 +42,48 @@ func loadFilenames(dir string, ch chan string) {
 			ch <- file.Name()
 		}
 	}
+	return nil
 }
 
-func cliApp(filename string, dir string, format string) (*CliOptions, error) {
-	co := CliOptions{}
+func cliApp(filename string, dir string, format string) (*Options, error) {
+	co := Options{}
 	err := co.SetFormat(format)
 	if err != nil {
 		return nil, err
 	}
 	if dir != "" {
 		filenames := make(chan string, 1)
-		dir = cleanPath(dir)
-		go loadFilenames(dir, filenames)
+		dir = goscon.CleanPath(dir)
+
+		errCh := make(chan error, 1)
+		go func() {
+			errCh <- loadFilenames(dir, filenames)
+		}()
+
 		for filename := range filenames {
-			if !isPdfFile(filename) {
+			if !goscon.IsPdfFile(filename) {
 				continue
 			}
-			co.Batch = append(co.Batch, dir+"/"+filename)
+			co.Batch = append(co.Batch, filepath.Join(dir, filename))
 		}
+
+		if err := <-errCh; err != nil {
+			return nil, err
+		}
+
 		co.Dir = dir
 		co.IsBatch = true
 	} else {
-		if !isPdfFile(filename) {
+		if !goscon.IsPdfFile(filename) {
 			return nil, errors.New("invalid file format")
 		}
-		co.File = cleanPath(filename)
+		co.File = goscon.CleanPath(filename)
 		co.Dir = filepath.Dir(filename)
 	}
 	return &co, nil
 }
 
-func Cli() (*CliOptions, error) {
+func Run() (*Options, error) {
 	var dir string
 	var format string
 	var filename string

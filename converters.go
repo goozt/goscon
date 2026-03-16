@@ -2,6 +2,7 @@ package goscon
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -27,12 +28,9 @@ func (s Statement) WriteCSV(filename string) error {
 	ext := filepath.Ext(filename)
 	filename = strings.TrimSuffix(filename, ext) + ".csv"
 	dir := filepath.Dir(filename)
-	_, err := os.Stat(dir)
-	if os.IsNotExist(err) {
-		err = os.Mkdir(dir, os.ModePerm)
-		if err != nil {
-			return err
-		}
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		return err
 	}
 	csvFile, err := os.Create(filename)
 	defer func() { csvFile.Close() }()
@@ -48,7 +46,21 @@ func (s Statement) WriteCSV(filename string) error {
 	return nil
 }
 
-func (s Statement) WriteJSON() error {
-	// TODO: JSON Converter
-	return nil
+func (s Statement) ToJSON() ([]byte, error) {
+	return json.MarshalIndent(s, "", "  ")
+}
+
+func (s Statement) WriteJSON(filename string) error {
+	data, err := s.ToJSON()
+	if err != nil {
+		return err
+	}
+	ext := filepath.Ext(filename)
+	filename = strings.TrimSuffix(filename, ext) + ".json"
+	dir := filepath.Dir(filename)
+	err = os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filename, data, 0644)
 }

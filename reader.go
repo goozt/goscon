@@ -1,7 +1,7 @@
 package goscon
 
 import (
-	"fmt"
+	"io"
 	"math"
 	"os"
 	"regexp"
@@ -34,23 +34,23 @@ func isCredit(content pdf.TextHorizontal) bool {
 func isOpeningBalance(content pdf.TextHorizontal) bool {
 
 	if content.Len() == 6 {
-		opening, err := parseFloat(content[1].S)
+		opening, err := ParseFloat(content[1].S)
 		if err != nil {
 			return false
 		}
-		credit, err := parseFloat(content[2].S)
+		credit, err := ParseFloat(content[2].S)
 		if err != nil {
 			return false
 		}
-		debit, err := parseFloat(content[3].S)
+		debit, err := ParseFloat(content[3].S)
 		if err != nil {
 			return false
 		}
-		charges, err := parseFloat(content[4].S)
+		charges, err := ParseFloat(content[4].S)
 		if err != nil {
 			return false
 		}
-		total, err := parseFloat(content[5].S)
+		total, err := ParseFloat(content[5].S)
 		if err != nil {
 			return false
 		}
@@ -77,14 +77,37 @@ func openPdfFile(path string) (*os.File, *pdf.Reader, error) {
 
 func Read(file string) (Statement, error) {
 	f, r, err := openPdfFile(file)
-	defer func() { f.Close() }()
+	if err != nil {
+		return Statement{}, err
+	}
+	defer f.Close()
+
+	statement, err := Parse(r)
 	if err != nil {
 		return Statement{}, err
 	}
 
+	if statement.MonthYear == "" {
+		exp := regexp.MustCompile(`[A-Z][a-z]{2,3} \d{4}`)
+		statement.MonthYear = exp.FindString(file)
+	}
+
+	return statement, nil
+}
+
+func ReadFrom(r io.ReaderAt, size int64) (Statement, error) {
+	pdfReader, err := pdf.NewReader(r, size)
+	if err != nil {
+		return Statement{}, err
+	}
+	return Parse(pdfReader)
+}
+
+func Parse(r *pdf.Reader) (Statement, error) {
 	var openingBalance float64
 	statement := Statement{}
 	totalPage := r.NumPage()
+	monthYearExp := regexp.MustCompile(`[A-Z][a-z]{2,3} \d{4}`)
 
 	for pageIndex := 1; pageIndex <= totalPage; pageIndex++ {
 		p := r.Page(pageIndex)
@@ -94,9 +117,16 @@ func Read(file string) (Statement, error) {
 
 		rows, _ := p.GetTextByRow()
 		for _, row := range rows {
-			fmt.Printf("%#v\n", row.Content)
+			if statement.MonthYear == "" {
+				for _, content := range row.Content {
+					if monthYearExp.MatchString(content.S) {
+						statement.MonthYear = monthYearExp.FindString(content.S)
+						break
+					}
+				}
+			}
 			if isOpeningBalance(row.Content) {
-				o, err := parseFloat(row.Content[1].S)
+				o, err := ParseFloat(row.Content[1].S)
 				if err == nil {
 					openingBalance = o
 				}
@@ -104,15 +134,15 @@ func Read(file string) (Statement, error) {
 			}
 
 			if isLine(row.Content) {
-				amt := strings.Replace(cleanString(row.Content[len(row.Content)-2].S), ",", "", -1)
+				amt := strings.Replace(CleanString(row.Content[len(row.Content)-2].S), ",", "", -1)
 				amount, err := strconv.ParseFloat(amt, 64)
 				if err != nil {
 					return Statement{}, err
 				}
 
-				date, err := time.Parse(ISTDATETIMEFORMAT, cleanString(row.Content[0].S)+" +0530")
+				date, err := time.Parse(ISTDATETIMEFORMAT, CleanString(row.Content[0].S)+" +0530")
 				if err != nil {
-					date, err = time.Parse(ISTDATEFORMAT, cleanString(row.Content[0].S)+" +0530")
+					date, err = time.Parse(ISTDATEFORMAT, CleanString(row.Content[0].S)+" +0530")
 				}
 				if err != nil {
 					return Statement{}, err
@@ -120,7 +150,7 @@ func Read(file string) (Statement, error) {
 
 				statement.Transactions = append(statement.Transactions, Transaction{
 					Date:        date,
-					Description: cleanString(row.Content[1].S),
+					Description: CleanString(row.Content[1].S),
 					Amount:      amount,
 					Credited:    isCredit(row.Content),
 				})
@@ -128,8 +158,6 @@ func Read(file string) (Statement, error) {
 		}
 	}
 
-	exp := regexp.MustCompile(`[A-Z][a-z]{2,3} \d{4}`)
-	statement.MonthYear = exp.FindString(file)
 	statement.Opening = openingBalance
 
 	return statement, nil

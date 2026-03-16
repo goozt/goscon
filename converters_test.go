@@ -35,3 +35,23 @@ func TestToStrings(t *testing.T) {
 		}
 	}
 }
+
+func TestToJSON(t *testing.T) {
+	trans := []Transaction{
+		{
+			time.Date(2023, 10, 27, 10, 0, 0, 0, time.UTC),
+			"Bag Purchased",
+			34645.45,
+			false,
+		},
+	}
+	s := Statement{
+		Transactions: trans,
+		Opening:      10000.00,
+		MonthYear:    "Oct 2023",
+	}
+	_, err := s.ToJSON()
+	if err != nil {
+		t.Fatalf("ToJSON failed: %v", err)
+	}
+}
