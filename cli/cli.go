@@ -99,19 +99,19 @@ func Run() (*Options, error) {
 		},
 		Description: "A format converter for Bank Statement(PDF)",
 		Usage:       "Converts Bank Statement(PDF) to desired structured formats",
-		UsageText:   "goscon [filname|-d directory] [-f format]",
+		UsageText:   "goscon [filename|-d directory] [-f format]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "directory",
 				Aliases:     []string{"d"},
-				Usage:       "directory inwhich all statements are stored",
+				Usage:       "directory in which all statements are stored",
 				Destination: &dir,
 			},
 			&cli.StringFlag{
 				Name:        "format",
 				Value:       "csv",
 				Aliases:     []string{"f"},
-				Usage:       "format to which the statement in converted",
+				Usage:       "format to which the statement is converted",
 				Destination: &format,
 			},
 		},

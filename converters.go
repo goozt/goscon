@@ -33,17 +33,12 @@ func (s Statement) WriteCSV(filename string) error {
 		return err
 	}
 	csvFile, err := os.Create(filename)
-	defer func() { csvFile.Close() }()
 	if err != nil {
 		return err
 	}
+	defer csvFile.Close()
 	w := csv.NewWriter(csvFile)
-	w.WriteAll(records)
-
-	if err = w.Error(); err != nil {
-		return err
-	}
-	return nil
+	return w.WriteAll(records)
 }
 
 func (s Statement) ToJSON() ([]byte, error) {

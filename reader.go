@@ -66,10 +66,12 @@ func openPdfFile(path string) (*os.File, *pdf.Reader, error) {
 	}
 	fi, err := f.Stat()
 	if err != nil {
+		f.Close()
 		return nil, nil, err
 	}
 	r, err := pdf.NewReader(f, fi.Size())
 	if err != nil {
+		f.Close()
 		return nil, nil, err
 	}
 	return f, r, nil
