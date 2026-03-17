@@ -6,7 +6,7 @@ import (
 )
 
 func TestCleanString(t *testing.T) {
-	got := cleanString("  234.87  ABC  , DE  334 50 ,dsg 234")
+	got := CleanString("  234.87  ABC  , DE  334 50 ,dsg 234")
 	want := "234.87 ABC,DE 334 50,dsg 234"
 	if got != want {
 		t.Fatalf("got %v, wanted %v", got, want)
@@ -15,16 +15,19 @@ func TestCleanString(t *testing.T) {
 
 func TestCleanPath(t *testing.T) {
 	dir, _ := filepath.Abs(".")
-	got := cleanPath("./sample/statements")
-	want := dir + "/sample/statements"
+	got, err := CleanPath("./sample/statements")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := filepath.Join(dir, "sample", "statements")
 	if got != want {
 		t.Fatalf("got %v, wanted %v", got, want)
 	}
 }
 
 func TestIsPdfFile(t *testing.T) {
-	g1 := isPdfFile("file.pdf")
-	g2 := isPdfFile("file.txt")
+	g1 := IsPdfFile("file.pdf")
+	g2 := IsPdfFile("file.txt")
 	if !g1 {
 		t.Errorf("got %v, wanted %v", g1, true)
 	}
@@ -34,7 +37,7 @@ func TestIsPdfFile(t *testing.T) {
 }
 
 func TestParseFloat(t *testing.T) {
-	got, err := parseFloat(" 34,45,324.54    ")
+	got, err := ParseFloat(" 34,45,324.54    ")
 	if err != nil {
 		t.Fatal(err)
 	}

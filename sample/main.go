@@ -3,37 +3,38 @@ package main
 import (
 	"fmt"
 	"log"
-	"path/filepath"
 
 	"github.com/goozt/goscon"
 )
 
 func main() {
-	cli, err := goscon.Cli()
+	// Example of using the library to parse a PDF file
+	file := "path/to/statement.pdf"
+	statement, err := goscon.Read(file)
 	if err != nil {
-		log.Fatalf("%+v", err)
+		// Handle error (in this sample we just print it as the file likely doesn't exist)
+		fmt.Printf("Error reading statement: %v\n", err)
+		return
 	}
-	if cli.IsBatch {
-		for _, file := range cli.Batch {
-			statement, err := goscon.Read(file)
-			if err != nil {
-				log.Fatalf("%+v", err)
-			}
-			dir, filename := filepath.Split(file)
-			err = statement.WriteCSV(dir + "csv/" + filename)
-			if err != nil {
-				log.Fatalf("%+v", err)
-			}
-		}
-	} else {
-		statement, err := goscon.Read(cli.File)
-		if err != nil {
-			log.Fatalf("%+v", err)
-		}
-		err = statement.WriteCSV(cli.File)
-		if err != nil {
-			log.Fatalf("%+v", err)
-		}
+
+	// Calculate some stats
+	fmt.Printf("Statement Month: %s\n", statement.MonthYear)
+	fmt.Printf("Opening Balance: %.2f\n", statement.Opening)
+	fmt.Printf("Total Purchases: %.2f\n", statement.Purchase())
+	fmt.Printf("Total Payments: %.2f\n", statement.Payment())
+	fmt.Printf("Total Dues: %.2f\n", statement.TotalDues())
+
+	// Convert to CSV
+	err = statement.WriteCSV("statement.csv")
+	if err != nil {
+		log.Fatalf("Error writing CSV: %v", err)
 	}
-	fmt.Println("Converted to", cli.Format)
+
+	// Convert to JSON
+	err = statement.WriteJSON("statement.json")
+	if err != nil {
+		log.Fatalf("Error writing JSON: %v", err)
+	}
+
+	fmt.Println("Successfully converted statement to CSV and JSON.")
 }
