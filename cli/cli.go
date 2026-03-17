@@ -53,7 +53,11 @@ func cliApp(filename string, dir string, format string) (*Options, error) {
 	}
 	if dir != "" {
 		filenames := make(chan string, 1)
-		dir = goscon.CleanPath(dir)
+		var err error
+		dir, err = goscon.CleanPath(dir)
+		if err != nil {
+			return nil, err
+		}
 
 		errCh := make(chan error, 1)
 		go func() {
@@ -77,7 +81,10 @@ func cliApp(filename string, dir string, format string) (*Options, error) {
 		if !goscon.IsPdfFile(filename) {
 			return nil, errors.New("invalid file format")
 		}
-		co.File = goscon.CleanPath(filename)
+		co.File, err = goscon.CleanPath(filename)
+		if err != nil {
+			return nil, err
+		}
 		co.Dir = filepath.Dir(filename)
 	}
 	return &co, nil

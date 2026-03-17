@@ -7,18 +7,20 @@ import (
 	"strings"
 )
 
+var (
+	spaceExp = regexp.MustCompile(`( ){2,}`)
+	commaExp = regexp.MustCompile(`(,)+|( )*,( )*`)
+)
+
 func CleanString(data string) string {
 	data = strings.TrimSpace(data)
-	spaceExp := regexp.MustCompile(`( ){2,}`)
 	data = spaceExp.ReplaceAllString(data, " ")
-	commaExp := regexp.MustCompile(`(,)+|( )*,( )*`)
 	return commaExp.ReplaceAllString(data, ",")
 }
 
-func CleanPath(filename string) string {
+func CleanPath(filename string) (string, error) {
 	file := filepath.Clean(filename)
-	file, _ = filepath.Abs(file)
-	return file
+	return filepath.Abs(file)
 }
 
 func IsPdfFile(file string) bool {

@@ -5,8 +5,6 @@ import (
 	"math"
 	"os"
 	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dslipak/pdf"
@@ -136,8 +134,7 @@ func Parse(r *pdf.Reader) (Statement, error) {
 			}
 
 			if isLine(row.Content) {
-				amt := strings.Replace(CleanString(row.Content[len(row.Content)-2].S), ",", "", -1)
-				amount, err := strconv.ParseFloat(amt, 64)
+				amount, err := ParseFloat(row.Content[len(row.Content)-2].S)
 				if err != nil {
 					return Statement{}, err
 				}

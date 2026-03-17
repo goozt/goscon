@@ -15,8 +15,11 @@ func TestCleanString(t *testing.T) {
 
 func TestCleanPath(t *testing.T) {
 	dir, _ := filepath.Abs(".")
-	got := CleanPath("./sample/statements")
-	want := dir + "/sample/statements"
+	got, err := CleanPath("./sample/statements")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := filepath.Join(dir, "sample", "statements")
 	if got != want {
 		t.Fatalf("got %v, wanted %v", got, want)
 	}
